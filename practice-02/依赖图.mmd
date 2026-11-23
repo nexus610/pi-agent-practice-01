@@ -1,0 +1,38 @@
+flowchart TB
+    subgraph L3["第 3 层"]
+        Coding["coding-agent"]
+        Env["env"]
+    end
+    subgraph L2["第 2 层"]
+        Agent["agent"]
+        Durable["durable"]
+    end
+    subgraph L1["第 1 层"]
+        AI["ai"]
+        Chord["chord"]
+    end
+    subgraph L0["第 0 层"]
+        Tui["tui"]
+        Mcp["mcp"]
+        Codemode["codemode"]
+        Schema["schema"]
+        Telemetry["telemetry"]
+    end
+    Coding --> Agent
+    Coding --> AI
+    Coding --> Tui
+    Coding --> Mcp
+    Coding --> Codemode
+    Env --> Durable
+    Env --> Chord
+    Agent --> AI
+    Agent --> Schema
+    Durable --> AI
+    Durable --> Chord
+    Durable --> Codemode
+    Durable --> Schema
+    Durable --> Telemetry
+    AI --> Schema
+    AI --> Telemetry
+    Chord --> Schema
+    Chord --> Telemetry
