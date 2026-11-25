@@ -7,7 +7,7 @@
 
 ## A. 单轮交互与工具调用
 
-在独立的实验目录创建 `handoff.txt`，写入待办「补充 README 的启动说明」和启动命令 `npm run demo -- --profile lyf-14989`。从实验目录用 Node.js 启动本地编译的 `packages/coding-agent/dist/cli.js`，使用独立的 `--session-dir` 保存对话。我在 RPC 模式提交提示词并记录工具事件；图 1 同时标出交互界面里对应的输入与渲染位置。
+在独立的实验目录创建 `handoff.txt`，写入待办「补充 README 的启动说明」和启动命令 `npm run demo -- --profile lyf-43809`。从实验目录用 Node.js 启动本地编译的 `packages/coding-agent/dist/cli.js`，使用独立的 `--session-dir` 保存对话。这一轮通过 Pi 的交互界面提交问题，随后用终端输出和会话文件核对日志及工具结果。
 
 实际输入为「请用 read 工具读取当前目录的 handoff.txt，原样告诉我待办和启动命令。」输入只给了文件名。Pi 成功调用了一次 `read`，回答中包含待办和完整的启动命令。一次用户输入触发了两轮模型请求。
 
@@ -27,7 +27,7 @@ sequenceDiagram
     participant M as 模型请求层
     participant R as read 工具
     U->>I: 提交读取 handoff.txt 的指令
-    Note over I: TUI 入口 defaultEditor.onSubmit → session.prompt(text)<br/>本次取证入口为 rpc-mode 的 prompt 命令
+    Note over I: interactive-mode.ts 的 defaultEditor.onSubmit → session.prompt(text)
     I->>A: agent-session.ts → this.agent.prompt(messages)
     A->>A: agent.ts → runAgentLoop → agent-loop.ts 的 runLoop
     A->>M: streamAssistantResponse → await streamFunction(model, llmContext, ...)
@@ -54,18 +54,18 @@ sequenceDiagram
 
 ## B. 恢复会话与新建会话
 
-A 完成后退出 Pi，再在同一实验目录用同一个本地 CLI、同一个模型和会话目录，带 `-c` 重新启动。用 `get_messages` 确认历史中仍有 A 的用户问题、工具调用、`toolResult` 和最终答复，且保留了完整命令。随后通过 RPC `new_session` 触发新会话，该命令与交互界面的 `/new` 都调用 `runtimeHost.newSession()`。新会话在提问前的聊天消息数为 0。
+A 完成后，按 `Ctrl+D` 退出 Pi。保持同一实验目录、模型和会话目录，给原启动命令加上 `-c` 重新运行。Pi 的交互界面重新显示了 A 的提问、`read` 记录和包含完整命令的答复。完成续问后，在同一界面输入 `/new`，看到 `New session started`。两份 JSONL 会话文件也分别确认了旧会话包含 A 的工具结果，新会话的第一条用户消息就是本次追问。
 
 两次提交了完全相同的问题：
 
 > 接着上次的待办，给 README 起草一条启动说明，写出交接单里的完整启动命令。只用这次会话已有的信息。不要调用工具。如果缺少命令，请直接说明。
 
-| 观察项 | 加 `-c` 恢复旧会话 | `new_session` 新会话 |
+| 观察项 | 加 `-c` 恢复旧会话 | 输入 `/new` 新会话 |
 | --- | --- | --- |
 | 提问前聊天历史 | 保留 A 的问题、工具调用、工具结果和回答 | 0 条聊天消息 |
 | 工具调用 | 0 次 | 0 次 |
 | 模型请求 | 1 次 | 1 次 |
-| 实际回答节选 | 在 README 启动草稿中写出 `npm run demo -- --profile lyf-14989` | 「根据本次会话已有的信息，我无法写出交接单里完整的启动命令。」 |
+| 实际回答节选 | 「在项目根目录执行以下命令即可启动演示程序」并给出 `npm run demo -- --profile lyf-43809` | 「抱歉，我在本次会话中还没有看到任何关于该项目的启动命令或交接单内容，因此无法起草 README 的启动说明。」 |
 
 ### 图 2 · 恢复和新建会话时发给模型的聊天消息
 
@@ -73,7 +73,7 @@ A 完成后退出 Pi，再在同一实验目录用同一个本地 CLI、同一�
 flowchart TD
     A["A 结束：Pi 已读文件并回答启动命令"]
     A --> C["退出 Pi，带 -c 重启"]
-    A --> N["交互 /new 或 RPC new_session"]
+    A --> N["在 Pi 交互界面输入 /new"]
     C --> F["continueRecent 选择旧会话文件<br/>loadEntriesFromFile 加载 JSONL"]
     F --> H["buildSessionContext 恢复 A 的聊天消息"]
     H --> Q1["输入 README 启动说明的问题"]
